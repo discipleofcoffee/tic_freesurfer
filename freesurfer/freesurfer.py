@@ -181,6 +181,7 @@ def qa_methods_edit_pial(fsinfo, verbose=False):
     shutil.copyfile(fsinfo['output']['volume']['brain.finalsurfs'],fsinfo['output']['volume']['brain.finalsurfs.manedit'])
 
     qm_volumes = [fsinfo['output']['volume']['T1']+':visible=0',
+                  fsinfo['output']['volume']['aseg'] + ':visible=0:colormap=lut',
                   fsinfo['output']['volume']['brain.finalsurfs.manedit'] + ':visible=0',
                   fsinfo['output']['volume']['brainmask']
                   ]
@@ -320,13 +321,13 @@ def methods(selected_method, fsinfo, verbose=False):
         methods_recon_pial(fsinfo, verbose)
 
     if 'wm_volume' in selected_method:
-        methods_recon_wm_volume(fsinfo, verbose)
+        methods_wm_volume(fsinfo, verbose)
 
     if 'wm_surface' in selected_method:
-        methods_edit_wm_surface(fsinfo, verbose)
+        methods_wm_surface(fsinfo, verbose)
 
     if 'wm_norm' in selected_method:
-        methods_edit_wm_norm(fsinfo, verbose)
+        methods_wm_norm(fsinfo, verbose)
 
     return
 
@@ -412,16 +413,6 @@ def methods_wm_norm(fsinfo, verbose=False):
                   '-autorecon3'
                   ]
 
-    if not os.path.isdir(fsinfo['base']['subject_dir']):
-
-        fs_command += ['-i', fsinfo['input']['t1']]
-
-        if fsinfo['input']['t2']:
-            fs_command += ['-T2', fsinfo['input']['t2']]
-
-        if fsinfo['input']['flair']:
-            fs_command += ['-FLAIR', fsinfo['input']['flair']]
-
     if verbose:
         print
         print(' '.join(fs_command))
@@ -434,29 +425,6 @@ def methods_wm_norm(fsinfo, verbose=False):
 
 #endregion
 
-def methods_recon_edit_pial(fsinfo, verbose=False):
-    if verbose:
-        print
-        print('methods_recon_edit_pial')
-        print
-
-    fs_command = ['recon-all',
-                  '-sd', fsinfo['base']['subjects_dir'],
-                  '-subjid', fsinfo['base']['subject_id'],
-                  '-autorecon-pial'
-                  ]
-
-    if verbose:
-        print
-        print(' '.join(fs_command))
-        print
-
-    try:
-        util.iw_subprocess(freesurfer_command, True, True, True)
-    except:
-        pass
-
-    return
 
 # ======================================================================================================================
 # region Status
@@ -502,20 +470,11 @@ def main():
     parser.add_argument("--subjects_dir", help="Subject's Directory (default=$SUBJECTS_DIR)",
                         default=os.getenv('SUBJECTS_DIR'))
 
-    parser.add_argument("--t1", help="T1w image NIFTI filename (default=t1w.nii.gz) ", default=None)    ## Parsing Arguments
+    parser.add_argument("--t1", help="T1w image NIFTI filename (default=None) ", default=None)    ## Parsing Arguments
 
-    usage = "usage: %prog [options] arg1 arg2"
-
-    parser = argparse.ArgumentParser(prog='imcollective_freesurfer')
-
-    parser.add_argument("subject_id", help="Subject ID", default=os.getcwd())
-    parser.add_argument("--subjects_dir", help="Subject's Directory (default=$SUBJECTS_DIR)",
-                        default=os.getenv('SUBJECTS_DIR'))
-
-    parser.add_argument("--t1", help="T1w image NIFTI filename (default=t1w.nii.gz) ", default=None)
-
-    parser.add_argument("--t2", help="T2w image NIFTI filename (default=None) ", default=None)
-    parser.add_argument("--flair", help="T2w FLAIR NIFTI filename (default=None)", default=None)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--t2", help="T2w image NIFTI filename (default=None) ", default=None)
+    group.add_argument("--flair", help="T2w FLAIR NIFTI filename (default=None)", default=None)
 
     parser.add_argument('-m','--methods', help='Methods (recon-all, pial, wm_norm, wm_volume, wm_surface )',
                         nargs=1, choices=METHODS, default=[None])
@@ -560,7 +519,6 @@ def main():
 
     if inArgs.status_results or inArgs.status:
         status_results(fsinfo, True)
-
 
     # QA of methods
     if inArgs.qm:

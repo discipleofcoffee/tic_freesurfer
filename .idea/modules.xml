@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../cenc/.idea/cenc.iml" filepath="$PROJECT_DIR$/../cenc/.idea/cenc.iml" />
       <module fileurl="file://$PROJECT_DIR$/../tic_cbf/.idea/tic_cbf.iml" filepath="$PROJECT_DIR$/../tic_cbf/.idea/tic_cbf.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/tic_freesurfer.iml" filepath="$PROJECT_DIR$/.idea/tic_freesurfer.iml" />
     </modules>
