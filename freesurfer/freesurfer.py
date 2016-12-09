@@ -39,6 +39,7 @@ def cp_file_with_timestamp(fname, suffix, user=getpass.getuser(), fmt='{fname}.{
 
 
 def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DIR'), t1=None, t2=None, flair=None):
+
     freesurfer_id = in_freesurfer_id
     freesurfer_subjects_dir = in_freesurfer_subjects_dir
     freesurfer_subject_dir = os.path.join(freesurfer_subjects_dir, freesurfer_id)
@@ -61,7 +62,8 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
                         ('subjects_dir', freesurfer_subjects_dir),
                         ('subject_dir', freesurfer_subject_dir),
                         ('mri', util.path_relative_to(freesurfer_subject_dir, 'mri')),
-                        ('surf', util.path_relative_to(freesurfer_subject_dir, 'surf'))
+                        ('surf', util.path_relative_to(freesurfer_subject_dir, 'surf')),
+                        ('scripts', util.path_relative_to(freesurfer_subject_dir, 'scripts'))
                         )
                        )
 
@@ -94,7 +96,11 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
 
     output_files = OrderedDict((('volume', volume_files), ('surface', surface_files)))
 
-    return {'base': base, 'input': input_files, 'output': output_files}
+    log_files = OrderedDict((('status', os.path.join(base['scripts'], 'recon-all-status.log')),
+                             ('log', os.path.join(base['scripts'], 'recon-all.log'))
+                            ))
+
+    return {'base': base, 'input': input_files, 'output': output_files, 'logs':log_files}
 
 #endregion
 
@@ -455,6 +461,16 @@ def methods_recon_edit_pial(fsinfo, verbose=False):
 # ======================================================================================================================
 # region Status
 
+def fslogs(selected_fslogs, fsinfo, verbose=False):
+
+    logger = logging.getLogger(__name__)
+    logger.debug('fslogs()')
+
+    with open(fsinfo['logs'][selected_fslogs], 'r') as fin:
+        print(fin.read())
+
+
+
 def results(input_dir, verbose):
     pass
 
@@ -510,6 +526,11 @@ def main():
     parser.add_argument("--status_methods", help="Check Freesurfer methods status", action="store_true", default=False)
     parser.add_argument("--status_results", help="Check Freesurfer results status", action="store_true", default=False)
 
+    FS_LOGS = ['display', 'status']
+
+    parser.add_argument('--fslogs', help='FreeSurfer Logs (log, status)',
+                        nargs=1, choices=FS_LOGS, default=[None])
+
     parser.add_argument('-v', '--verbose', help="Verbose flag", action="store_true", default=False)
 
     parser.add_argument('--qi', help="QA inputs", action="store_true", default=False)
@@ -545,6 +566,11 @@ def main():
     if inArgs.qm:
         logger.debug('QM logging statement')  # will not print anything
         qa_methods(inArgs.qm, fsinfo, inArgs.verbose)
+
+    if inArgs.fslogs:
+
+        fslogs(inArgs.fslogs, fsinfo, inArgs.verbose)
+
 
 #endregion
 
