@@ -143,12 +143,13 @@ def qa_methods(selected_qa_method, fsinfo, verbose=False):
 
 def qa_freesurfer(qm_command, verbose=False):
 
+    freeview_command = ['freeview', '--viewport', 'coronal' ] + qm_command
+
     if verbose:
         print
-        print(' '.join(qm_command))
+        print(' '.join(freeview_command))
         print
 
-    freeview_command = ['freeview', '--viewport', 'coronal' ] + qm_command
 
     DEVNULL = open(os.devnull, 'wb')
     pipe = subprocess.Popen([' '.join(freeview_command)], shell=True,
