@@ -526,10 +526,10 @@ def main():
     parser.add_argument("--status_methods", help="Check Freesurfer methods status", action="store_true", default=False)
     parser.add_argument("--status_results", help="Check Freesurfer results status", action="store_true", default=False)
 
-    FS_LOGS = ['display', 'status']
+    FS_LOGS = ['log', 'status']
 
     parser.add_argument('--fslogs', help='FreeSurfer Logs (log, status)',
-                        nargs=1, choices=FS_LOGS, default=[None])
+                         choices=FS_LOGS, default=None)
 
     parser.add_argument('-v', '--verbose', help="Verbose flag", action="store_true", default=False)
 
