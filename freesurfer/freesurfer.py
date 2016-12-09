@@ -151,7 +151,7 @@ def qa_freesurfer(qm_command, verbose=False):
     freeview_command = ['freeview', '--viewport', 'coronal' ] + qm_command
 
     DEVNULL = open(os.devnull, 'wb')
-    pipe = subprocess.Popen([' '.join(qm_command)], shell=True,
+    pipe = subprocess.Popen([' '.join(freeview_command)], shell=True,
                             stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, close_fds=True)
 
 
