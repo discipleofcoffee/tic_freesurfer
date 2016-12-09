@@ -27,7 +27,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 
 # ======================================================================================================================
@@ -148,6 +148,8 @@ def qa_freesurfer(qm_command, verbose=False):
         print(' '.join(qm_command))
         print
 
+    freeview_command = ['freeview', '--viewport', 'coronal' ] + qm_command
+
     DEVNULL = open(os.devnull, 'wb')
     pipe = subprocess.Popen([' '.join(qm_command)], shell=True,
                             stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, close_fds=True)
@@ -171,9 +173,9 @@ def qa_methods_edit_pial(fsinfo, verbose=False):
 
     shutil.copyfile(fsinfo['output']['volume']['brain.finalsurfs'],fsinfo['output']['volume']['brain.finalsurfs.manedit'])
 
-    qm_volumes = [fsinfo['output']['volume']['T1'],
-                  fsinfo['output']['volume']['brain.finalsurfs.manedit']+':colormap=jet:colorscale=0,100:opacity=0.3:visible=0',
-                  fsinfo['output']['volume']['brainmask']+':colormap=jet:colorscale=0,100:opacity=0.3'
+    qm_volumes = [fsinfo['output']['volume']['T1']+':visible=0',
+                  fsinfo['output']['volume']['brain.finalsurfs.manedit'] + ':visible=0',
+                  fsinfo['output']['volume']['brainmask']
                   ]
 
     qm_surfaces = [fsinfo['output']['surface']['lh']['white'] + ':edgecolor=yellow',
@@ -182,7 +184,7 @@ def qa_methods_edit_pial(fsinfo, verbose=False):
                    fsinfo['output']['surface']['rh']['pial'] + ':edgecolor=red'
                    ]
 
-    qm_command = ['freeview', '-v'] + qm_volumes + ['-f'] + qm_surfaces
+    qm_command = ['-v'] + qm_volumes + ['-f'] + qm_surfaces
 
     qa_freesurfer(qm_command, verbose)
 
@@ -212,7 +214,7 @@ def qa_methods_edit_wm_segmentation(fsinfo, verbose=False):
                    fsinfo['output']['surface']['lh']['inflated'] + ':visible=0'
                    ]
 
-    qm_command = ['freeview', '-v'] + qm_volumes + ['-f'] + qm_surfaces
+    qm_command = [ '-v'] + qm_volumes + ['-f'] + qm_surfaces
 
     qa_freesurfer(qm_command, verbose)
 
@@ -250,7 +252,7 @@ def qa_methods_edit_wm_surface(fsinfo, verbose=False):
                    fsinfo['output']['surface']['lh']['inflated'] + ':visible=0'
                    ]
 
-    qm_command = ['freeview', '-v'] + qm_volumes + ['-f'] + qm_surfaces
+    qm_command = ['-v'] + qm_volumes + ['-f'] + qm_surfaces
 
     qa_freesurfer(qm_command, verbose)
 
@@ -288,7 +290,7 @@ def qa_methods_edit_wm_norm(fsinfo, verbose=False):
                    fsinfo['output']['surface']['lh']['inflated'] + ':visible=0'
                    ]
 
-    qm_command = ['freeview', '-v'] + qm_volumes + ['-f'] + qm_surfaces
+    qm_command = ['-v'] + qm_volumes + ['-f'] + qm_surfaces
 
     qa_freesurfer(qm_command, verbose)
 
@@ -477,7 +479,7 @@ def main():
 
     usage = "usage: %prog [options] arg1 arg2"
 
-    parser = argparse.ArgumentParser(prog='imcollective_freesurfer')
+    parser = argparse.ArgumentParser(prog='tic_freesurfer')
 
     parser.add_argument("subject_id", help="Subject ID", default=os.getcwd())
     parser.add_argument("--subjects_dir", help="Subject's Directory (default=$SUBJECTS_DIR)",
