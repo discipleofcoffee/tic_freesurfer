@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-tic_freesurfer.py provides a basic interface for Freesurfer recon-all and QA.
+create volume brain mask from pial surface and aseg
 """
 import shutil
 
@@ -33,27 +33,28 @@ logger.setLevel(logging.CRITICAL)
 
 def create_pial_mask(subject_id, subjects_dir, verbose=False):
 
-    volmask = VolumeMask()
+    ribbon = os.path.abspath(os.path.join(subjects_dir, subject_id, 'mri','ribbon'))
+    aseg = os.path.abspath(os.path.join(subjects_dir, subject_id, 'mri','aseg'))
 
-    volmask.inputs.subject_id = subject_id
-    volmask.inputs.subjects_dir = subjects_dir
+    mc = MRIConvert()
+    mc.inputs.in_file = ribbon + '.mgz'
+    mc.inputs.out_file = ribbon + '.nii.gz'
+    mc.inputs.out_type = 'nii'
+    mc.cmdline
+    mc.run()
 
+    mc = MRIConvert()
+    mc.inputs.in_file = aseg + '.mgz'
+    mc.inputs.out_file = aseg + '.nii.gz'
+    mc.inputs.out_type = 'nii'
+    mc.cmdline
+    mc.run()
+    
+#tic_labels_remove aseg.nii.gz --out_nii 1.mask.nii.gz --remove 3 42
+#fslmaths 1.mask.nii.gz -bin 1.mask.nii.gz
 
-    volmask.inputs.left_whitelabel = 2
-    volmask.inputs.left_ribbonlabel = 3
-    volmask.inputs.right_whitelabel = 41
-    volmask.inputs.right_ribbonlabel = 42
-    volmask.inputs.lh_pial = 'lh.pial'
-    volmask.inputs.rh_pial = 'lh.pial'
-    volmask.inputs.lh_white = 'lh.pial'
-    volmask.inputs.rh_white = 'lh.pial'
-    volmask.inputs.save_ribbon = True
-
-
-    if verbose:
-        volmask.cmdline
-
-    # volmask.run()
+#fslmaths 1.mask.nii.gz -add ribbon.nii.gz -bin 2.mask.nii.gz
+#fslmaths 2.mask.nii.gz -kernel sphere 10 -dilM -ero -fillh 3.mask.nii.gz
 
     return
 

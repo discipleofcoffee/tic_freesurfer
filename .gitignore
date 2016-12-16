@@ -1,0 +1,8 @@
+# Created by .ignore support plugin (hsz.mobi)
+.idea/
+junk/
+*.egg-info/
+*~
+#*#
+.DS_Store
+__pycache__/
