@@ -361,6 +361,7 @@ def methods_recon_all(fsinfo, verbose=False):
 
     return
 
+
 def methods_recon_pial(fsinfo, verbose=False):
 
     logger.debug('methods_recon_pial()')
