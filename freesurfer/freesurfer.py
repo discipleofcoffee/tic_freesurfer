@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 tic_freesurfer.py provides a basic interface for Freesurfer recon-all and QA.
@@ -10,8 +10,12 @@ import os  # system functions
 import re
 import json
 
+#import redcap # from PyCap http://sburns.org/2013/07/10/freesurfer-stats-in-redcap.htm
+#from recon_stats import Subject
+# from redcap import Project
+
 import argparse
-import iwUtilities as util
+#import iwUtilities as util
 import subprocess
 
 import nipype.interfaces.fsl as fsl
@@ -33,9 +37,101 @@ logger.setLevel(logging.CRITICAL)
 # ======================================================================================================================
 # region Support Functions
 
+def  check_files(fileList, verboseFlag=False):
+    
+    qaInputStatus = True
+    
+    if verboseFlag:
+        print
+        
+    for ii in fileList:
+
+        if os.path.isfile(ii): 
+            
+            if verboseFlag:
+                print str( ii ) + " exists"
+                
+        else:                
+            qaInputStatus = False
+                    
+            if verboseFlag:
+                strError = str( ii ) + " does not exist"
+                print strError
+            
+     
+    if verboseFlag:
+        print
+        print "All files exist = " + str(qaInputStatus)
+        print
+        
+    return qaInputStatus
+
+
+def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=False ):
+
+     import datetime
+
+     iiDateTime = datetime.datetime.now()
+     timeStamp = iiDateTime.strftime('%Y%m%d%H%M%S')
+          
+     callCommand = map(str, callCommand)
+
+     if nohupFlag:
+
+          if debugFlag:
+               print('Timestamp: %s ' % timeStamp )
+
+          
+          callCommand = ["nohup" ] + callCommand
+
+          stdout_log_file   = 'nohup.stdout.' + timeStamp +'.log'
+          stderr_log_file   = 'nohup.stderr.' + timeStamp +'.log' 
+          
+          if verboseFlag or debugFlag:
+               print
+               print " ".join(callCommand)
+               print stdout_log_file
+               print
+
+          # http://stackoverflow.com/questions/6011235/run-a-program-from-python-and-have-it-continue-to-run-after-the-script-is-kille                   
+
+          subprocess.Popen( callCommand,
+                            stdout=open(stdout_log_file, 'w'),
+                            stderr=open(stderr_log_file, 'w'),
+                            preexec_fn=os.setpgrp, 
+                            )
+
+          if verboseFlag or debugFlag:
+               print
+
+     else:
+
+          if debugFlag:
+               print
+               print " ".join(callCommand)
+               print
+
+          pipe   = subprocess.Popen(callCommand, stdout=subprocess.PIPE)
+          output = pipe.communicate()[0]
+
+          if debugFlag:
+               print
+               print output
+               print
+
 
 def cp_file_with_timestamp(fname, suffix, user=getpass.getuser(), fmt='{fname}.{suffix}.{user}.d%Y%m%d_%H%M%S'):
     return datetime.datetime.now().strftime(fmt).format(fname=fname, suffix=suffix, user=user)
+
+
+def path_relative_to(in_directory, in_path):
+
+     if os.path.isabs(in_path):
+          out_path = in_path
+     else:
+          out_path = os.path.abspath(os.path.join(in_directory, in_path )) 
+
+     return out_path
 
 
 def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DIR'), t1=None, t2=None, flair=None):
@@ -61,13 +157,15 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
     base = OrderedDict((('subject_id', freesurfer_id),
                         ('subjects_dir', freesurfer_subjects_dir),
                         ('subject_dir', freesurfer_subject_dir),
-                        ('mri', util.path_relative_to(freesurfer_subject_dir, 'mri')),
-                        ('surf', util.path_relative_to(freesurfer_subject_dir, 'surf')),
-                        ('scripts', util.path_relative_to(freesurfer_subject_dir, 'scripts'))
+                        ('mri', path_relative_to(freesurfer_subject_dir, 'mri')),
+                        ('surf', path_relative_to(freesurfer_subject_dir, 'surf')),
+                        ('scripts', path_relative_to(freesurfer_subject_dir, 'scripts'))
                         )
                        )
 
     volume_files = OrderedDict((('T1', os.path.join(base['mri'], 'T1.mgz')),
+                                ('flair', os.path.join(base['mri'], 'FLAIR.mgz')),
+                                ('t2', os.path.join(base['mri'], 'T2.mgz')),
                                 ('wm', os.path.join(base['mri'], 'wm.mgz')),
                                 ('nu', os.path.join(base['mri'], 'nu.mgz')),
                                 ('aseg', os.path.join(base['mri'], 'aseg.mgz')),
@@ -81,6 +179,7 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
                                )
 
     surface_lh_files = OrderedDict((('white', os.path.join(base['surf'], 'lh.white')),
+                                    ('pial_woflair', os.path.join(base['surf'], 'lh.woFLAIR.pial')),
                                     ('pial', os.path.join(base['surf'], 'lh.pial')),
                                     ('inflated', os.path.join(base['surf'], 'lh.inflated'))
                                     )
@@ -88,6 +187,7 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
 
     surface_rh_files = OrderedDict((('white', os.path.join(base['surf'], 'rh.white')),
                                     ('pial', os.path.join(base['surf'], 'rh.pial')),
+                                    ('pial_woflair', os.path.join(base['surf'], 'rh.woFLAIR.pial')),
                                     ('inflated', os.path.join(base['surf'], 'rh.inflated'))
                                     )
                                    )
@@ -111,7 +211,7 @@ def get_info(in_freesurfer_id, in_freesurfer_subjects_dir=os.getenv('SUBJECTS_DI
 def qi(fsinfo, verbose=False):
     input_files = filter(None, fsinfo['input'].values())
 
-    if util.check_files(input_files):
+    if check_files(input_files):
 
         qi_command = ['freeview', '-v'] + input_files
 
@@ -126,12 +226,15 @@ def qi(fsinfo, verbose=False):
         pass
 
 
-QA_METHODS = ['pial', 'wm_volume', 'wm_surface', 'wm_norm']
+QA_METHODS = ['mri', 'pial', 'wm_volume', 'wm_surface', 'wm_norm']
 
 def qa_methods(selected_qa_method, fsinfo, verbose=False):
 
     logger = logging.getLogger(__name__)
     logger.debug('qa_methods()')
+
+    if 'mri' in selected_qa_method:
+        qa_methods_mri(fsinfo, verbose)
 
     if 'pial' in selected_qa_method:
         qa_methods_edit_pial(fsinfo, verbose)
@@ -181,6 +284,7 @@ def qa_methods_edit_pial(fsinfo, verbose=False):
     shutil.copyfile(fsinfo['output']['volume']['brain.finalsurfs'],fsinfo['output']['volume']['brain.finalsurfs.manedit'])
 
     qm_volumes = [fsinfo['output']['volume']['T1']+':visible=0',
+                  fsinfo['output']['volume']['flair']+':visible=0',
                   fsinfo['output']['volume']['aseg'] + ':visible=0:colormap=lut',
                   fsinfo['output']['volume']['brain.finalsurfs.manedit'] + ':visible=0',
                   fsinfo['output']['volume']['brainmask']
@@ -188,13 +292,45 @@ def qa_methods_edit_pial(fsinfo, verbose=False):
 
     qm_surfaces = [fsinfo['output']['surface']['lh']['white'] + ':edgecolor=yellow',
                    fsinfo['output']['surface']['lh']['pial'] + ':edgecolor=red',
+                   fsinfo['output']['surface']['lh']['pial_woflair'] + ':edgecolor=blue',
                    fsinfo['output']['surface']['rh']['white'] + ':edgecolor=yellow',
-                   fsinfo['output']['surface']['rh']['pial'] + ':edgecolor=red'
+                   fsinfo['output']['surface']['rh']['pial'] + ':edgecolor=red',
+                   fsinfo['output']['surface']['rh']['pial_woflair'] + ':edgecolor=blue',
                    ]
 
     qm_command = ['-v'] + qm_volumes + ['-f'] + qm_surfaces
 
     qa_freesurfer(qm_command, verbose)
+
+
+
+def qa_methods_mri(fsinfo, verbose=False):
+    # https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/TroubleshootingData
+    # https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/PialEdits_freeview
+    #
+    # recon-all -autorecon-pial -subjid pial_edits_before
+
+    # Volume plots
+    #
+
+    # Copy brainmask.mgz before editing it.
+
+    qm_volumes = [ fsinfo['output']['volume']['T1']+':visible=0' ] 
+
+    if os.path.isfile( fsinfo['output']['volume']['flair'] ):
+        qm_volumes += [ fsinfo['output']['volume']['flair']+':visible=1' ]
+
+    if os.path.isfile( fsinfo['output']['volume']['t2'] ):
+        qm_volumes += [ fsinfo['output']['volume']['t2']+':visible=0' ]
+
+    qm_volumes += [ fsinfo['output']['volume']['aseg'] + ':visible=1:colormap=lut:opacity=.8',
+                    fsinfo['output']['volume']['brainmask'] + ':visible=0:colormap=jet:opacity=0.8',
+                  ]
+
+    qm_command = [ '-v' ] + qm_volumes
+
+    qa_freesurfer(qm_command, verbose)
+
 
 def qa_methods_edit_wm_segmentation(fsinfo, verbose=False):
     # https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/TroubleshootingData
@@ -352,32 +488,40 @@ def methods_recon_all(fsinfo, verbose=False):
         if fsinfo['input']['flair']:
             fs_command += ['-FLAIR', fsinfo['input']['flair']]
 
+
+
     if verbose:
         print
         print(' '.join(fs_command))
         print
 
-    util.iw_subprocess(fs_command, True, True, True)
+    iw_subprocess(fs_command, True, True, True)
 
     return
-
 
 def methods_recon_pial(fsinfo, verbose=False):
 
     logger.debug('methods_recon_pial()')
 
     fs_command = [ 'recon-all',
-                  '-autorecon-pial',
+                  '-autorecon-pial', '-autorecon3',
                   '-sd', fsinfo['base']['subjects_dir'],
                   '-subjid', fsinfo['base']['subject_id'],
                   ]
+
+    if fsinfo['input']['t2']:
+        fs_command += ['-T2', fsinfo['input']['t2'], '-T2pial']
+
+    if fsinfo['input']['flair']:
+        fs_command += ['-FLAIR', fsinfo['input']['flair'], '-FLAIRpial']
+
 
     if verbose:
         print
         print(' '.join(fs_command))
         print
 
-    util.iw_subprocess(fs_command, True, True, True)
+    iw_subprocess(fs_command, True, True, True)
 
     return
 
@@ -397,7 +541,7 @@ def methods_wm_volume(fsinfo, verbose=False):
         print(' '.join(fs_command))
         print
 
-    util.iw_subprocess(fs_command, True, True, True)
+    iw_subprocess(fs_command, True, True, True)
 
     return
 
@@ -419,13 +563,40 @@ def methods_wm_norm(fsinfo, verbose=False):
         print(' '.join(fs_command))
         print
 
-    util.iw_subprocess(fs_command, True, True, True)
+    iw_subprocess(fs_command, True, True, True)
 
     return
 
 
 #endregion
 
+
+# ======================================================================================================================
+# region RedCap UploadStatus
+
+#def redcap_freesurfer_upload(subject_id, redcap_url, redcap_token, verbose):
+
+#    s = Subject(subject_id) # where SUBJECTID is an identifier for a subject living in SUBJECTS_DIR
+#    s.get_measures()
+#    data = s.upload_dict()
+
+#    if verbose:
+#        print()
+#        print([subject_id, redcap_url, redcap_token])
+#        print()
+#        print(data)
+#        print()
+
+    # Using my PyCap package, you can then import the data into a REDCap project
+
+#    p = Project(redcap_url, redcap_token)
+
+#    data[p.def_field] = subject_id
+#    response = p.import_records([data])
+
+
+
+#endregion
 
 # ======================================================================================================================
 # region Status
@@ -440,16 +611,16 @@ def fslogs(selected_fslogs, fsinfo, verbose=False):
 
 
 
-def results(input_dir, verbose):
-    pass
+def status_run( fsinfo, verbose ):
 
 
-def status_methods(input_dir, verbose):
-    pass
+     result_files = [ fsinfo['output']['volume']['wmparc'] ]
+     freesurfer_status_run = util.check_files(result_files, False)
 
+     if verbose:
+          print( fsinfo['base']['subject_id'] + ', ' + fsinfo['base']['subject_dir'] + ', run, ' + str(freesurfer_status_run) )
 
-def status_results(input_dir, verbose):
-    pass
+     return freesurfer_status_run
 
 
 #endregion
@@ -480,13 +651,14 @@ def main():
     parser.add_argument('-m','--methods', help='Methods (recon-all, pial, wm_norm, wm_volume, wm_surface )',
                         nargs=1, choices=METHODS, default=[None])
 
-    parser.add_argument("--qm", help="QA methods (pial, wm_norm, wm_volume, wm_surface)", nargs='*', choices=QA_METHODS, default=[None])
+    parser.add_argument("--qm", help="QA methods (mri, pial, wm_norm, wm_volume, wm_surface)", nargs='*', choices=QA_METHODS, default=[None])
 
-    parser.add_argument("--status", help="Check Freesurfer status", action="store_true", default=False)
-    parser.add_argument("--status_methods", help="Check Freesurfer methods status", action="store_true", default=False)
-    parser.add_argument("--status_results", help="Check Freesurfer results status", action="store_true", default=False)
+    parser.add_argument("--status", help="Status check. choices=['run', 'results']", nargs='*',
+                        choices=['results', 'run', 'all'], default=[None])
 
     FS_LOGS = ['log', 'status']
+
+    parser.add_argument("--redcap", help="RedCap URL and Token", nargs=2, type=str, default = None)
 
     parser.add_argument('--fslogs', help='FreeSurfer Logs (log, status)',
                          choices=FS_LOGS, default=None)
@@ -495,6 +667,8 @@ def main():
 
     parser.add_argument('--qi', help="QA inputs", action="store_true", default=False)
     parser.add_argument('--qr', help="QA results", action="store_true", default=False)
+
+
 
     inArgs = parser.parse_args()
 
@@ -515,11 +689,16 @@ def main():
         methods( inArgs.methods, fsinfo, inArgs.verbose)
 
     # Status
-    if inArgs.status_methods or inArgs.status:
-        status_methods(fsinfo, True)
+    if 'run' in inArgs.status or 'all' in inArgs.status:
+        status_run(fsinfo, True)
 
-    if inArgs.status_results or inArgs.status:
-        status_results(fsinfo, True)
+
+    # Upload Results to RedCap
+    if inArgs.redcap:
+        print(fsinfo['base']['subject_id'])
+
+        redcap_freesurfer_upload(fsinfo['base']['subject_id'], inArgs.redcap[0], inArgs.redcap[1], inArgs.verbose)
+
 
     # QA of methods
     if inArgs.qm:

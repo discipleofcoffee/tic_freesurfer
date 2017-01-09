@@ -8,7 +8,9 @@ import shutil
 import argparse
 import os
 from nipype.interfaces.freesurfer import VolumeMask
+from nipype.interfaces.freesurfer import MRIConvert
 
+import sys
 import subprocess
 
 import logging
@@ -79,7 +81,7 @@ def main():
 
     inArgs = parser.parse_args()
 
-    create_pial_mask(inArgs.subject_id, inArgs.subjects_dir)
+    create_pial_mask(inArgs.subject_id, inArgs.subjects_dir, inArgs.verbose)
 
 
 #endregion
