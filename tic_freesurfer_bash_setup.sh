@@ -8,6 +8,9 @@
 # export TIC_FREESURFER_PATH=$TIC_PATH/tic_freesurfer/''  # Add path information here
 # source $TIC_FREESURFER_PATH/tic_freesurfer_bash_setup.sh
 
+
+export TIC_FREESURFER_PYTHONPATH=$TIC_PATH/tic_freesurfer/freesurfer/  # Add path information here
+
 export PYTHONPATH=${TIC_FREESURFER_PYTHONPATH}:$PYTHONPATH
 
-alias  tic_freesurfer='python3 ${TIC_FREESURFER_PYTHONPATH}/freesurfer.py'
+alias  tic_freesurfer='python2 ${TIC_FREESURFER_PYTHONPATH}/freesurfer.py'
