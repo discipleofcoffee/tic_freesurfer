@@ -60,9 +60,9 @@ def  check_files(fileList, verboseFlag=False):
             
      
     if verboseFlag:
-        print()
+        print('')
         print("All files exist = " + str(qaInputStatus))
-        print()
+        print('')
         
     return qaInputStatus
 
@@ -88,10 +88,10 @@ def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=F
           stderr_log_file   = 'nohup.stderr.' + timeStamp +'.log' 
           
           if verboseFlag or debugFlag:
-               print()
+               print('')
                print(" ".join(callCommand))
                print(stdout_log_file)
-               print()
+               print('')
 
           # http://stackoverflow.com/questions/6011235/run-a-program-from-python-and-have-it-continue-to-run-after-the-script-is-kille                   
 
@@ -102,22 +102,22 @@ def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=F
                             )
 
           if verboseFlag or debugFlag:
-               print()
+               print('')
 
      else:
 
           if debugFlag:
-               print()
-               print(" ".join(callCommand))
-               print()
+               print(' ')
+               print(' '.join(callCommand))
+               print(' ')
 
           pipe   = subprocess.Popen(callCommand, stdout=subprocess.PIPE)
           output = pipe.communicate()[0]
 
           if debugFlag:
-               print()
+               print(' ')
                print(output)
-               print()
+               print(' ')
 
 
 def cp_file_with_timestamp(fname, suffix, user=getpass.getuser(), fmt='{fname}.{suffix}.{user}.d%Y%m%d_%H%M%S'):
@@ -255,9 +255,9 @@ def qa_freesurfer(qm_command, verbose=False):
     freeview_command = ['freeview', '--viewport', 'coronal' ] + qm_command
 
     if verbose:
-        print
+        print(' ')
         print(' '.join(freeview_command))
-        print
+        print(' ')
 
 
     DEVNULL = open(os.devnull, 'wb')
@@ -581,11 +581,11 @@ def methods_wm_norm(fsinfo, verbose=False):
 #    data = s.upload_dict()
 
 #    if verbose:
-#        print()
+#        print(' ')
 #        print([subject_id, redcap_url, redcap_token])
-#        print()
+#        print(' ')
 #        print(data)
-#        print()
+#        print(' ')
 
     # Using my PyCap package, you can then import the data into a REDCap project
 

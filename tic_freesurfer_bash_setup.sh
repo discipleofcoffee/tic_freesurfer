@@ -14,3 +14,4 @@ export TIC_FREESURFER_PYTHONPATH=$TIC_PATH/tic_freesurfer/freesurfer/  # Add pat
 export PYTHONPATH=${TIC_FREESURFER_PYTHONPATH}:$PYTHONPATH
 
 alias  tic_freesurfer='python2 ${TIC_FREESURFER_PYTHONPATH}/freesurfer.py'
+llr
