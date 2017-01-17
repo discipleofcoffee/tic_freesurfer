@@ -15,7 +15,7 @@ import json
 # from redcap import Project
 
 import argparse
-#import iwUtilities as util
+import _utilities as util
 import subprocess
 
 import nipype.interfaces.fsl as fsl
@@ -49,20 +49,20 @@ def  check_files(fileList, verboseFlag=False):
         if os.path.isfile(ii): 
             
             if verboseFlag:
-                print str( ii ) + " exists"
+                print(str( ii ) + " exists")
                 
         else:                
             qaInputStatus = False
                     
             if verboseFlag:
                 strError = str( ii ) + " does not exist"
-                print strError
+                print(strError)
             
      
     if verboseFlag:
-        print
-        print "All files exist = " + str(qaInputStatus)
-        print
+        print()
+        print("All files exist = " + str(qaInputStatus))
+        print()
         
     return qaInputStatus
 
@@ -79,7 +79,7 @@ def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=F
      if nohupFlag:
 
           if debugFlag:
-               print('Timestamp: %s ' % timeStamp )
+               print('Timestamp: %s ' % timeStamp)
 
           
           callCommand = ["nohup" ] + callCommand
@@ -88,10 +88,10 @@ def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=F
           stderr_log_file   = 'nohup.stderr.' + timeStamp +'.log' 
           
           if verboseFlag or debugFlag:
-               print
-               print " ".join(callCommand)
-               print stdout_log_file
-               print
+               print()
+               print(" ".join(callCommand))
+               print(stdout_log_file)
+               print()
 
           # http://stackoverflow.com/questions/6011235/run-a-program-from-python-and-have-it-continue-to-run-after-the-script-is-kille                   
 
@@ -102,22 +102,22 @@ def iw_subprocess( callCommand, verboseFlag=False, debugFlag=False,  nohupFlag=F
                             )
 
           if verboseFlag or debugFlag:
-               print
+               print()
 
      else:
 
           if debugFlag:
-               print
-               print " ".join(callCommand)
-               print
+               print()
+               print(" ".join(callCommand))
+               print()
 
           pipe   = subprocess.Popen(callCommand, stdout=subprocess.PIPE)
           output = pipe.communicate()[0]
 
           if debugFlag:
-               print
-               print output
-               print
+               print()
+               print(output)
+               print()
 
 
 def cp_file_with_timestamp(fname, suffix, user=getpass.getuser(), fmt='{fname}.{suffix}.{user}.d%Y%m%d_%H%M%S'):
